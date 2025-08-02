@@ -74,7 +74,7 @@ def log():
     c.execute("SELECT id, message, timestamp FROM commits ORDER BY id DESC")
     rows=c.fetchall()
     
-    for commit,id,message,ts in rows:
+    for id,message,ts in rows:
         click.secho(f"Commit ID: {commit-id}",fg="cyan")
         click.secho(f"Message: {message}",fg="white")
         click.secho(f"Time : {ts}",fg="green")
