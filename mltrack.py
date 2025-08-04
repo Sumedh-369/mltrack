@@ -58,15 +58,34 @@ def add(file):
 @click.argument("file")
 @click.option("-m","--message",prompt="commit message")
 def commit(file, message):
-    hash=get_file_hash(file)
-    conn=sqlite3.connect(DB_File)
-    c=conn.cursor()
-    c.execute("INSERT INTO commits(filename, hash, message,timestamp) VALUES(?,?,?,?)",
-              (file,hash,message,datetime.now().isoformat()))
+    if not os.path.exists(file):
+        click.secho(f"File '{file}' not found!", fg="red")
+        return
+    
+    # File ka hash nikaalo
+    hash = get_file_hash(file)
+    snapshot_path = os.path.join(snapShot_Dir, hash)
+    
+    # Snapshot check aur create
+    if not os.path.exists(snapshot_path):
+        click.secho(f"⚠ File '{file}' has not been added yet!", fg="yellow")
+        click.secho(f"💡 Run: mltrack add {file} before committing.", fg="blue")
+        return
+    else:
+        click.secho(f"Snapshot already exists for '{file}'", fg="green")
+    
+    # Database me commit entry save karo
+    conn = sqlite3.connect(DB_File)
+    c = conn.cursor()
+    c.execute(
+        "INSERT INTO commits(filename, hash, message, timestamp) VALUES (?, ?, ?, ?)",
+        (file, hash, message, datetime.now().isoformat())
+    )
     conn.commit()
     conn.close()
-    click.echo(f"committed '{file}' with message: {message}")
     
+    click.secho(f"Committed '{file}' with message: {message}", fg="cyan")
+
 @cli.command()
 def log():
     conn=sqlite3.connect(DB_File)
@@ -75,7 +94,7 @@ def log():
     rows=c.fetchall()
     
     for id,message,ts in rows:
-        click.secho(f"Commit ID: {commit-id}",fg="cyan")
+        click.secho(f"Commit ID: {id}",fg="cyan")
         click.secho(f"Message: {message}",fg="white")
         click.secho(f"Time : {ts}",fg="green")
         
